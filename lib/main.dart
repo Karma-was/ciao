@@ -59,18 +59,27 @@ class _MyHomePageState extends State<MyHomePage> {
  
   List<TaskModel> taskList = [];
   List<TaskModel> searchQuery = [];
-  bool isSearching = false;
-String attualeQuery= '';
+  final TextEditingController searchController = TextEditingController();
+  final TextEditingController taskTextEditingController = TextEditingController();
+  
   @override
   void initState() {
     super.initState();
-    searchQuery = taskList;
+    searchQuery = List.from(taskList);
+    searchController.addListener(_updateSearch);
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    taskTextEditingController.dispose();
+    super.dispose();
   }
 
   void createTask({required TaskModel task}) {
     setState(() {
       taskList.add(task);
-      filtro(attualeQuery);
+      _updateSearch();
     });
   }
 
@@ -78,19 +87,19 @@ String attualeQuery= '';
     final taskIndex = taskList.indexWhere((task) => task.id == taskId);
     setState(() {
       taskList[taskIndex] = updatedTask;
+      _updateSearch();
     });
   }
 
   void deleteTask({required String taskId}) {
     setState(() {
       taskList.removeWhere((task) => task.id == taskId);
-      filtro(attualeQuery);
+      _updateSearch();
     });
   }
-  final TextEditingController taskTextEditingController = TextEditingController();
 
-  void filtro(String query) {
-    attualeQuery = query;
+  void _updateSearch() {
+    final query = searchController.text;
     setState(() {
       if (query.isEmpty) {
         searchQuery = List.from(taskList);
@@ -133,90 +142,88 @@ String attualeQuery= '';
             topRight: Radius.circular(30),
           ),
         ),
-
-        child: 
-            Column(
-              children: [
-                SearchAnchor(
-                builder: (BuildContext context, SearchController controller) {
-                  return SearchBar(
-                    controller: controller,
-                    onTap: () { 
-                      controller.openView();
-                    },
-                    onChanged: (value) {
-                          filtro(value);
-               
-                      controller.openView();
-                    },
-                    hintText: 'Search tasks',
-                  );
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: TextField(
+                controller: searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search task...',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            searchController.clear();
+                            _updateSearch();
+                          },
+                        )
+                      : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                onChanged: (value) {
+                  _updateSearch();
                 },
-                suggestionsBuilder: (BuildContext context, SearchController controller) {
-                  return taskList.where((task) => task.title.toLowerCase().contains(controller.text.toLowerCase())).map((task) {
-                    return ListTile(
-                      title: Text(task.title),
-                      onTap: () {
-                        controller.closeView(task.title);
-                      },
-                    );
-                  });
-                }
               ),
-                searchQuery.isNotEmpty ?
-                Container(height: MediaQuery.of(context).size.height*0.4,width: MediaQuery.of(context).size.width,
-                  child: ListView.builder(
-                        itemCount:   searchQuery.length,
-                        itemBuilder: (context, index) {
-                          final TaskModel mimmo =  searchQuery[index];
-                          return ListTile(
-                            title: Text(mimmo.title,
+            ),
+            Expanded(
+              child: searchQuery.isNotEmpty
+                  ? ListView.builder(
+                      itemCount: searchQuery.length,
+                      itemBuilder: (context, index) {
+                        final TaskModel task = searchQuery[index];
+                        return ListTile(
+                          title: Text(
+                            task.title,
                             style: TextStyle(
-                              color: mimmo.isCompleted 
-                              ? Colors.grey 
-                              : Colors.black,
-                              decoration: mimmo.isCompleted
-                              ? TextDecoration.lineThrough
-                              : TextDecoration.none,
+                              color: task.isCompleted ? Colors.grey : Colors.black,
+                              decoration: task.isCompleted
+                                  ? TextDecoration.lineThrough
+                                  : TextDecoration.none,
                               fontSize: 18,
-                                ),
+                            ),
+                          ),
+                          trailing: IconButton(
+                            onPressed: () {
+                              deleteTask(taskId: task.id);
+                            },
+                            icon: const Icon(Icons.delete, color: Colors.red, size: 30.0),
+                          ),
+                          leading: Transform.scale(
+                            scale: 1.5,
+                            child: Checkbox(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(50),
                               ),
-                              trailing: IconButton(
-                                onPressed: () {
-                                  deleteTask(taskId: mimmo.id);
-                                },
-                                icon: const Icon(Icons.delete, color: Colors.red, size: 30.0),
-                              ),
-                              leading: Transform.scale(
-                                scale:1.5,
-                                child: Checkbox(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(50),
-                                  ),
-                                  value: mimmo.isCompleted,
-                                  onChanged: (value) {
-                                    setState((){ mimmo.isCompleted = value!;
-                                                filtro(attualeQuery);});
-                                      
-                                  },
-                                )
-                              )
-                          );
-                        }
-                      ),
+                              value: task.isCompleted,
+                              onChanged: (value) {
+                                setState(() {
+                                  task.isCompleted = value!;
+                                  _updateSearch();
+                                });
+                              },
+                            ),
+                          ),
+                        );
+                      },
                     )
-                    : const Center(
+                  : const Center(
                       child: Padding(
                         padding: EdgeInsets.symmetric(horizontal: 15.0),
                         child: Text(
-                          'No tasks yet, add one!',
+                          'Nessun task trovato, aggiungine uno!',
                           textAlign: TextAlign.center,
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ),
+            ),
+          ],
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           showDialog(
