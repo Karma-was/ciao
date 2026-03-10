@@ -60,7 +60,7 @@ class _MyHomePageState extends State<MyHomePage> {
   List<TaskModel> taskList = [];
   List<TaskModel> searchQuery = [];
   bool isSearching = false;
-
+String attualeQuery= '';
   @override
   void initState() {
     super.initState();
@@ -88,6 +88,7 @@ class _MyHomePageState extends State<MyHomePage> {
   final TextEditingController taskTextEditingController = TextEditingController();
 
   void filtro(String query) {
+    attualeQuery = query;
     List<TaskModel> results = [];
     if (query.isEmpty) {
       results = taskList;
@@ -140,19 +141,13 @@ class _MyHomePageState extends State<MyHomePage> {
                 builder: (BuildContext context, SearchController controller) {
                   return SearchBar(
                     controller: controller,
-                    onTap: () {  setState(() {
-                          isSearching = false;
-                        });
+                    onTap: () { 
                       controller.openView();
                     },
                     onChanged: (value) {
-                        setState(() {
                           filtro(value);
-                          isSearching = true;
-                          print(searchQuery);
-                        });
+               
                       controller.openView();
-                      print(searchQuery);
                     },
                     hintText: 'Search tasks',
                   );
@@ -199,7 +194,11 @@ class _MyHomePageState extends State<MyHomePage> {
                                     borderRadius: BorderRadius.circular(50),
                                   ),
                                   value: mimmo.isCompleted,
-                                  onChanged: (value) {},
+                                  onChanged: (value) {
+                                    setState((){ mimmo.isCompleted = value!;
+                                                filtro(attualeQuery);});
+                                      
+                                  },
                                 )
                               )
                           );
