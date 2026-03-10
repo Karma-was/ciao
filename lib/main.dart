@@ -70,6 +70,7 @@ String attualeQuery= '';
   void createTask({required TaskModel task}) {
     setState(() {
       taskList.add(task);
+      filtro(attualeQuery);
     });
   }
 
@@ -83,22 +84,21 @@ String attualeQuery= '';
   void deleteTask({required String taskId}) {
     setState(() {
       taskList.removeWhere((task) => task.id == taskId);
+      filtro(attualeQuery);
     });
   }
   final TextEditingController taskTextEditingController = TextEditingController();
 
   void filtro(String query) {
     attualeQuery = query;
-    List<TaskModel> results = [];
-    if (query.isEmpty) {
-      results = taskList;
-    } else {
-      results = taskList
-          .where((task) => task.title.toLowerCase().contains(query.toLowerCase()))
-          .toList();
-    }
-     setState(() {
-      searchQuery = results;
+    setState(() {
+      if (query.isEmpty) {
+        searchQuery = List.from(taskList);
+      } else {
+        searchQuery = taskList
+            .where((task) => task.title.toLowerCase().contains(query.toLowerCase()))
+            .toList();
+      }
     });
   }
 
